@@ -21,3 +21,6 @@ htmlcov/
 # Build
 build/
 dist/
+
+# Windows
+desktop.ini
