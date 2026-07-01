@@ -1,5 +1,7 @@
-from sqlalchemy import Float, String
-from sqlalchemy.orm import Mapped, mapped_column
+from decimal import Decimal
+
+from sqlalchemy import Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base_model import BaseModel
 
@@ -22,12 +24,17 @@ class Product(BaseModel):
         nullable=True,
     )
 
-    price: Mapped[float] = mapped_column(
-        Float,
+    price: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
         nullable=False,
     )
 
     stock: Mapped[int] = mapped_column(
         default=0,
         nullable=False,
+    )
+
+    order_items = relationship(
+        "OrderItem",
+        back_populates="product",
     )

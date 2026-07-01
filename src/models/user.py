@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base_model import BaseModel
 
@@ -45,4 +45,10 @@ class User(BaseModel):
         Boolean,
         default=False,
         nullable=False,
+    )
+
+    orders = relationship(
+        "Order",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )

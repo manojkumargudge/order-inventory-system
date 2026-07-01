@@ -27,7 +27,7 @@ class ProductRepository:
 
         self.db.add(product)
 
-        await self.db.commit()
+        await self.db.flush()
 
         await self.db.refresh(product)
 
@@ -89,7 +89,21 @@ class ProductRepository:
         for key, value in update_data.items():
             setattr(product, key, value)
 
-        await self.db.commit()
+        await self.db.flush()
+
+        await self.db.refresh(product)
+
+        return product
+
+    async def save(
+        self,
+        product: Product,
+    ) -> Product:
+        """
+        Save changes to an existing product.
+        """
+
+        await self.db.flush()
 
         await self.db.refresh(product)
 
@@ -105,4 +119,4 @@ class ProductRepository:
 
         await self.db.delete(product)
 
-        await self.db.commit()
+        await self.db.flush()

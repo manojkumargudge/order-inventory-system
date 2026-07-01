@@ -31,9 +31,18 @@ class ProductService:
                 "Product with this name already exists."
             )
 
-        return await self.repository.create_product(
-            product_data
-        )
+        try:
+            product = await self.repository.create_product(
+                product_data
+            )
+
+            await self.repository.db.commit()
+
+            return product
+
+        except Exception:
+            await self.repository.db.rollback()
+            raise
 
     async def get_all_products(
         self,
@@ -72,10 +81,19 @@ class ProductService:
         if product is None:
             return None
 
-        return await self.repository.update_product(
-            product,
-            product_data,
-        )
+        try:
+            updated_product = await self.repository.update_product(
+                product,
+                product_data,
+            )
+
+            await self.repository.db.commit()
+
+            return updated_product
+
+        except Exception:
+            await self.repository.db.rollback()
+            raise
 
     async def delete_product(
         self,
@@ -92,8 +110,15 @@ class ProductService:
         if product is None:
             return False
 
-        await self.repository.delete_product(
-            product
-        )
+        try:
+            await self.repository.delete_product(
+                product
+            )
 
-        return True
+            await self.repository.db.commit()
+
+            return True
+
+        except Exception:
+            await self.repository.db.rollback()
+            raise
