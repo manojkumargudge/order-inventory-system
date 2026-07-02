@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base_model import BaseModel
+
+if TYPE_CHECKING:
+    from src.models.customer import Customer
 
 
 class User(BaseModel):
@@ -50,5 +55,11 @@ class User(BaseModel):
     orders = relationship(
         "Order",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    customer: Mapped["Customer"] = relationship(
+        back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan",
     )
