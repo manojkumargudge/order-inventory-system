@@ -6,6 +6,7 @@ from src.models.product import Product
 from src.repositories.order_repository import OrderRepository
 from src.repositories.product_repository import ProductRepository
 from src.schemas.order import OrderCreate
+from src.services.order_status_service import OrderStatusService
 
 
 class OrderService:
@@ -131,8 +132,7 @@ class OrderService:
         """
 
         return await self.order_repository.get_order_by_id_and_user(
-            order_id
-            ,
+            order_id,
             user_id,
         )
 
@@ -158,8 +158,7 @@ class OrderService:
         """
 
         order = await self.order_repository.get_order_by_id_and_user(
-            order_id
-            ,
+            order_id,
             user_id,
         )
 
@@ -179,14 +178,57 @@ class OrderService:
 
                 if product is not None:
                     product.stock += item.quantity
+
                     await self.product_repository.save(
                         product
                     )
 
             order.status = OrderStatus.CANCELLED
+
             order = await self.order_repository.save(
                 order
             )
+
+            await self.order_repository.db.commit()
+
+            return await self.order_repository.get_order_by_id(
+                order.id
+            )
+
+        except Exception:
+            await self.order_repository.db.rollback()
+            raise
+
+    async def update_order_status(
+        self,
+        order_id: int,
+        user_id: int,
+        new_status: OrderStatus,
+    ) -> Order | None:
+        """
+        Update an order status after validating the workflow.
+        """
+
+        order = await self.order_repository.get_order_by_id_and_user(
+            order_id,
+            user_id,
+        )
+
+        if order is None:
+            return None
+
+        OrderStatusService.validate_transition(
+            order.status,
+            new_status,
+        )
+
+        order.status = new_status
+
+        try:
+            order = await self.order_repository.save(
+                order
+            )
+
             await self.order_repository.db.commit()
 
             return await self.order_repository.get_order_by_id(

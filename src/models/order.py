@@ -1,18 +1,10 @@
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy import Enum, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.models.enums import OrderStatus
 from src.models.base_model import BaseModel
-
-
-class OrderStatus:
-    """
-    Order status constants.
-    """
-
-    PENDING = "PENDING"
-    CANCELLED = "CANCELLED"
 
 
 class Order(BaseModel):
@@ -33,8 +25,8 @@ class Order(BaseModel):
         nullable=False,
     )
 
-    status: Mapped[str] = mapped_column(
-        String(20),
+    status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus),
         default=OrderStatus.PENDING,
         nullable=False,
     )
