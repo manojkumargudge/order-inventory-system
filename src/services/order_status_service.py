@@ -1,4 +1,4 @@
-from src.models.enums import OrderStatus
+from src.core.enums import OrderStatus
 
 
 class OrderStatusService:
@@ -45,7 +45,10 @@ class OrderStatusService:
         """
         Raises ValueError if transition is invalid.
         """
-        if not cls.can_transition(current_status, new_status):
+        if not cls.can_transition(
+            current_status,
+            new_status,
+        ):
             raise ValueError(
                 f"Invalid status transition: "
                 f"{current_status.value} → {new_status.value}"

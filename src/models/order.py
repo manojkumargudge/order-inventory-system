@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy import Enum, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.enums import OrderStatus
+from src.core.enums import OrderStatus
 from src.models.base_model import BaseModel
 
 
