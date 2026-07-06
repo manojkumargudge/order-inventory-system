@@ -28,7 +28,6 @@ class ProductRepository:
         self.db.add(product)
 
         await self.db.flush()
-
         await self.db.refresh(product)
 
         return product
@@ -90,7 +89,6 @@ class ProductRepository:
             setattr(product, key, value)
 
         await self.db.flush()
-
         await self.db.refresh(product)
 
         return product
@@ -104,7 +102,6 @@ class ProductRepository:
         """
 
         await self.db.flush()
-
         await self.db.refresh(product)
 
         return product
@@ -118,5 +115,82 @@ class ProductRepository:
         """
 
         await self.db.delete(product)
+        await self.db.flush()
+
+    # ======================================================
+    # Inventory Management Methods
+    # ======================================================
+
+    async def has_sufficient_stock(
+        self,
+        product: Product,
+        quantity: int,
+    ) -> bool:
+        """
+        Check whether the requested quantity is available.
+        """
+
+        return product.stock >= quantity
+
+    async def decrease_stock(
+        self,
+        product: Product,
+        quantity: int,
+    ) -> Product:
+        """
+        Reduce product stock.
+        """
+
+        product.stock -= quantity
 
         await self.db.flush()
+        await self.db.refresh(product)
+
+        return product
+
+    async def increase_stock(
+        self,
+        product: Product,
+        quantity: int,
+    ) -> Product:
+        """
+        Increase product stock.
+        """
+
+        product.stock += quantity
+
+        await self.db.flush()
+        await self.db.refresh(product)
+
+        return product
+
+    async def get_low_stock_products(
+        self,
+        threshold: int = 10,
+    ) -> list[Product]:
+        """
+        Fetch products whose stock is below the threshold.
+        """
+
+        result = await self.db.execute(
+            select(Product).where(
+                Product.stock <= threshold
+            )
+        )
+
+        return list(result.scalars().all())
+
+    async def get_out_of_stock_products(
+        self,
+    ) -> list[Product]:
+        """
+        Fetch products with zero stock.
+        """
+
+        result = await self.db.execute(
+            select(Product).where(
+                Product.stock == 0
+            )
+        )
+
+        return list(result.scalars().all())

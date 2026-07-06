@@ -1,6 +1,7 @@
 from decimal import Decimal
 
-from src.models.order import Order, OrderStatus
+from src.core.enums import OrderStatus
+from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.product import Product
 from src.repositories.order_repository import OrderRepository
@@ -51,6 +52,7 @@ class OrderService:
             products_by_id: dict[int, Product] = {}
 
             for product_id, quantity in requested_quantities.items():
+
                 product = await self.product_repository.get_by_id(
                     product_id
                 )
@@ -60,7 +62,10 @@ class OrderService:
                         f"Product with ID {product_id} does not exist."
                     )
 
-                if product.stock < quantity:
+                if not await self.product_repository.has_sufficient_stock(
+                    product,
+                    quantity,
+                ):
                     raise ValueError(
                         f"Insufficient stock for product '{product.name}'."
                     )
@@ -81,9 +86,7 @@ class OrderService:
 
                 product = products_by_id[item.product_id]
 
-                subtotal: Decimal = (
-                    product.price * item.quantity
-                )
+                subtotal = product.price * item.quantity
 
                 total_amount += subtotal
 
@@ -98,10 +101,9 @@ class OrderService:
                     order_item
                 )
 
-                product.stock -= item.quantity
-
-                await self.product_repository.save(
-                    product
+                await self.product_repository.decrease_stock(
+                    product,
+                    item.quantity,
                 )
 
             order.total_amount = total_amount
@@ -171,16 +173,18 @@ class OrderService:
             )
 
         try:
+
             for item in order.order_items:
+
                 product = await self.product_repository.get_by_id(
                     item.product_id
                 )
 
                 if product is not None:
-                    product.stock += item.quantity
 
-                    await self.product_repository.save(
-                        product
+                    await self.product_repository.increase_stock(
+                        product,
+                        item.quantity,
                     )
 
             order.status = OrderStatus.CANCELLED
@@ -196,7 +200,9 @@ class OrderService:
             )
 
         except Exception:
+
             await self.order_repository.db.rollback()
+
             raise
 
     async def update_order_status(
@@ -225,6 +231,7 @@ class OrderService:
         order.status = new_status
 
         try:
+
             order = await self.order_repository.save(
                 order
             )
@@ -236,5 +243,7 @@ class OrderService:
             )
 
         except Exception:
+
             await self.order_repository.db.rollback()
+
             raise

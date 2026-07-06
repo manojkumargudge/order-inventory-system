@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from src.core.enums import OrderStatus
 from src.models.order import Order
+from src.models.product import Product
 
 
 class AdminRepository:
@@ -108,3 +109,59 @@ class AdminRepository:
             "cancelled_orders": cancelled_orders or 0,
             "total_revenue": total_revenue or 0,
         }
+
+    async def get_low_stock_products(
+        self,
+        threshold: int = 10,
+    ) -> list[Product]:
+        """
+        Get products with stock less than or equal to the threshold.
+        """
+
+        result = await self.db.execute(
+            select(Product)
+            .where(Product.stock <= threshold)
+            .order_by(Product.stock.asc())
+        )
+
+        return result.scalars().all()
+
+    async def get_out_of_stock_products(
+        self,
+    ) -> list[Product]:
+        """
+        Get products with zero stock.
+        """
+
+        result = await self.db.execute(
+            select(Product)
+            .where(Product.stock == 0)
+            .order_by(Product.name)
+        )
+
+        return result.scalars().all()
+
+    async def restock_product(
+        self,
+        product_id: int,
+        quantity: int,
+    ) -> Product | None:
+        """
+        Increase the stock of a product.
+        """
+
+        result = await self.db.execute(
+            select(Product).where(Product.id == product_id)
+        )
+
+        product = result.scalar_one_or_none()
+
+        if product is None:
+            return None
+
+        product.stock += quantity
+
+        await self.db.commit()
+        await self.db.refresh(product)
+
+        return product

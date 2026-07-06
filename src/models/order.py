@@ -41,3 +41,10 @@ class Order(BaseModel):
         back_populates="order",
         cascade="all, delete-orphan",
     )
+
+    payment = relationship(
+        "Payment",
+        back_populates="order",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

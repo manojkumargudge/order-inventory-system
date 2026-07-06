@@ -6,7 +6,14 @@ from alembic import context
 
 from src.core.config import settings
 from src.db.base import Base
-from src.models import Order, OrderItem, Product, User
+from src.models import (
+    Customer,
+    Order,
+    OrderItem,
+    Payment,
+    Product,
+    User,
+)
 
 config = context.config
 

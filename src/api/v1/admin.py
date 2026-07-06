@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import get_current_user
@@ -7,6 +7,7 @@ from src.models.user import User
 from src.repositories.admin_repository import AdminRepository
 from src.schemas.dashboard import DashboardResponse
 from src.schemas.order import OrderResponse
+from src.schemas.product import ProductResponse
 from src.services.admin_service import AdminService
 
 router = APIRouter(
@@ -23,6 +24,18 @@ def get_admin_service(
     )
 
 
+def verify_admin(current_user: User):
+    """
+    Ensure the current user is an admin.
+    """
+
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
+
+
 @router.get(
     "/orders",
     response_model=list[OrderResponse],
@@ -35,11 +48,7 @@ async def get_all_orders(
     Get all orders (Admin only).
     """
 
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
+    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -59,11 +68,7 @@ async def get_order_by_id(
     Get order by ID (Admin only).
     """
 
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
+    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -90,12 +95,87 @@ async def get_dashboard(
     Get dashboard statistics (Admin only).
     """
 
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
+    verify_admin(current_user)
 
     service = get_admin_service(db)
 
     return await service.get_dashboard_stats()
+
+
+@router.get(
+    "/inventory/low-stock",
+    response_model=list[ProductResponse],
+)
+async def get_low_stock_products(
+    threshold: int = Query(
+        default=10,
+        ge=0,
+        description="Low stock threshold",
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get products with low stock.
+    """
+
+    verify_admin(current_user)
+
+    service = get_admin_service(db)
+
+    return await service.get_low_stock_products(threshold)
+
+
+@router.get(
+    "/inventory/out-of-stock",
+    response_model=list[ProductResponse],
+)
+async def get_out_of_stock_products(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get products that are out of stock.
+    """
+
+    verify_admin(current_user)
+
+    service = get_admin_service(db)
+
+    return await service.get_out_of_stock_products()
+
+
+@router.patch(
+    "/products/{product_id}/restock",
+    response_model=ProductResponse,
+)
+async def restock_product(
+    product_id: int,
+    quantity: int = Query(
+        ...,
+        gt=0,
+        description="Quantity to add",
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Increase product stock.
+    """
+
+    verify_admin(current_user)
+
+    service = get_admin_service(db)
+
+    product = await service.restock_product(
+        product_id,
+        quantity,
+    )
+
+    if product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found.",
+        )
+
+    return product
