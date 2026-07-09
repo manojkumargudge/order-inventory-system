@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.dependencies import get_current_user
+from src.core.dependencies import (
+    get_current_user,
+    require_admin,
+)
 from src.db.session import get_db
 from src.models.user import User
 from src.repositories.product_repository import ProductRepository
@@ -26,19 +29,20 @@ router = APIRouter(
 async def create_product(
     product_data: ProductCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
-    """
-    Create a new product.
-    """
+    print("\n" + "=" * 60)
+    print("🔥 CREATE PRODUCT ENDPOINT EXECUTED")
+    print(f"Username      : {current_user.username}")
+    print(f"Role          : {current_user.role}")
+    print(f"Superuser     : {current_user.is_superuser}")
+    print("=" * 60 + "\n")
 
     repository = ProductRepository(db)
     service = ProductService(repository)
 
     try:
-        product = await service.create_product(product_data)
-        return product
-
+        return await service.create_product(product_data)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,10 +58,6 @@ async def get_all_products(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Get all products.
-    """
-
     repository = ProductRepository(db)
     service = ProductService(repository)
 
@@ -73,10 +73,6 @@ async def get_product_by_id(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Get product by ID.
-    """
-
     repository = ProductRepository(db)
     service = ProductService(repository)
 
@@ -99,12 +95,8 @@ async def update_product(
     product_id: int,
     product_data: ProductUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
-    """
-    Update an existing product.
-    """
-
     repository = ProductRepository(db)
     service = ProductService(repository)
 
@@ -122,24 +114,16 @@ async def update_product(
     return product
 
 
-@router.delete(
-    "/{product_id}",
-)
+@router.delete("/{product_id}")
 async def delete_product(
     product_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
-    """
-    Delete a product.
-    """
-
     repository = ProductRepository(db)
     service = ProductService(repository)
 
-    deleted = await service.delete_product(
-        product_id
-    )
+    deleted = await service.delete_product(product_id)
 
     if not deleted:
         raise HTTPException(

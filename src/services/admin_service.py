@@ -1,3 +1,4 @@
+from src.core.enums import UserRole
 from src.repositories.admin_repository import AdminRepository
 
 
@@ -75,4 +76,32 @@ class AdminService:
         return await self.admin_repository.restock_product(
             product_id,
             quantity,
+        )
+
+    async def change_user_role(
+        self,
+        current_user_id: int,
+        target_user_id: int,
+        role: UserRole,
+    ):
+        """
+        Change a user's role.
+        """
+
+        if current_user_id == target_user_id:
+            raise ValueError(
+                "You cannot change your own role."
+            )
+
+        user = await self.admin_repository.get_user_by_id(
+            target_user_id
+        )
+
+        if user is None:
+            raise ValueError("User not found.")
+
+        user.role = role
+
+        return await self.admin_repository.update_user_role(
+            user
         )

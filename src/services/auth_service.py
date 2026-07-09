@@ -63,4 +63,7 @@ class AuthService:
         Generate a JWT access token.
         """
 
-        return create_access_token(subject=user.username)
+        return create_access_token(
+            subject=user.username,
+            role=user.role.value,
+        )

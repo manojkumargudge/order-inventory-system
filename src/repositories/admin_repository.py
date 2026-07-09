@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from src.core.enums import OrderStatus
 from src.models.order import Order
 from src.models.product import Product
+from src.models.user import User
 
 
 class AdminRepository:
@@ -165,3 +166,32 @@ class AdminRepository:
         await self.db.refresh(product)
 
         return product
+
+    async def get_user_by_id(
+        self,
+        user_id: int,
+    ) -> User | None:
+        """
+        Get a user by ID.
+        """
+
+        result = await self.db.execute(
+            select(User).where(User.id == user_id)
+        )
+
+        return result.scalar_one_or_none()
+
+    async def update_user_role(
+        self,
+        user: User,
+    ) -> User:
+        """
+        Update a user's role.
+        """
+
+        self.db.add(user)
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.dependencies import get_current_user
+from src.core.dependencies import require_admin
 from src.db.session import get_db
 from src.models.user import User
 from src.repositories.admin_repository import AdminRepository
 from src.schemas.dashboard import DashboardResponse
 from src.schemas.order import OrderResponse
 from src.schemas.product import ProductResponse
+from src.schemas.user import UserRoleUpdate
 from src.services.admin_service import AdminService
 
 router = APIRouter(
@@ -24,31 +25,17 @@ def get_admin_service(
     )
 
 
-def verify_admin(current_user: User):
-    """
-    Ensure the current user is an admin.
-    """
-
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
-
-
 @router.get(
     "/orders",
     response_model=list[OrderResponse],
 )
 async def get_all_orders(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Get all orders (Admin only).
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -62,13 +49,11 @@ async def get_all_orders(
 async def get_order_by_id(
     order_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Get order by ID (Admin only).
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -89,13 +74,11 @@ async def get_order_by_id(
 )
 async def get_dashboard(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Get dashboard statistics (Admin only).
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -113,13 +96,11 @@ async def get_low_stock_products(
         description="Low stock threshold",
     ),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Get products with low stock.
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -132,13 +113,11 @@ async def get_low_stock_products(
 )
 async def get_out_of_stock_products(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Get products that are out of stock.
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -157,13 +136,11 @@ async def restock_product(
         description="Quantity to add",
     ),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin()),
 ):
     """
     Increase product stock.
     """
-
-    verify_admin(current_user)
 
     service = get_admin_service(db)
 
@@ -179,3 +156,39 @@ async def restock_product(
         )
 
     return product
+
+
+@router.patch(
+    "/users/{user_id}/role",
+)
+async def change_user_role(
+    user_id: int,
+    role_data: UserRoleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin()),
+):
+    """
+    Change a user's role.
+    """
+
+    service = get_admin_service(db)
+
+    try:
+        user = await service.change_user_role(
+            current_user.id,
+            user_id,
+            role_data.role,
+        )
+
+        return {
+            "message": "User role updated successfully.",
+            "user_id": user.id,
+            "username": user.username,
+            "role": user.role,
+        }
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )

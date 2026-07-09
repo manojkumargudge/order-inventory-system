@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.enums import UserRole
 from src.models.base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -49,6 +50,12 @@ class User(BaseModel):
     is_superuser: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        nullable=False,
+    )
+
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole),
+        default=UserRole.CUSTOMER,
         nullable=False,
     )
 

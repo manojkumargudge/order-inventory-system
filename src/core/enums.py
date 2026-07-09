@@ -14,3 +14,8 @@ class PaymentStatus(str, Enum):
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
     REFUNDED = "REFUNDED"
+
+
+class UserRole(str, Enum):
+    ADMIN = "ADMIN"
+    CUSTOMER = "CUSTOMER"
