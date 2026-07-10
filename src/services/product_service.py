@@ -1,6 +1,15 @@
+from decimal import Decimal
+
+from src.core.enums import (
+    ProductSortField,
+    SortOrder,
+)
 from src.models.product import Product
 from src.repositories.product_repository import ProductRepository
-from src.schemas.product import ProductCreate, ProductUpdate
+from src.schemas.product import (
+    ProductCreate,
+    ProductUpdate,
+)
 
 
 class ProductService:
@@ -44,14 +53,34 @@ class ProductService:
             await self.repository.db.rollback()
             raise
 
-    async def get_all_products(
+    async def get_products(
         self,
+        search: str | None = None,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
+        in_stock: bool | None = None,
+        sort_by: ProductSortField | None = None,
+        order: SortOrder = SortOrder.ASC,
+        page: int = 1,
+        page_size: int = 10,
     ) -> list[Product]:
         """
-        Get all products.
+        Fetch products with search,
+        filtering,
+        sorting,
+        and pagination.
         """
 
-        return await self.repository.get_all()
+        return await self.repository.get_products(
+            search=search,
+            min_price=min_price,
+            max_price=max_price,
+            in_stock=in_stock,
+            sort_by=sort_by,
+            order=order,
+            page=page,
+            page_size=page_size,
+        )
 
     async def get_product_by_id(
         self,
@@ -122,3 +151,92 @@ class ProductService:
         except Exception:
             await self.repository.db.rollback()
             raise
+
+    async def increase_stock(
+        self,
+        product_id: int,
+        quantity: int,
+    ) -> Product | None:
+        """
+        Increase product stock.
+        """
+
+        product = await self.repository.get_by_id(
+            product_id
+        )
+
+        if product is None:
+            return None
+
+        try:
+            updated_product = await self.repository.increase_stock(
+                product,
+                quantity,
+            )
+
+            await self.repository.db.commit()
+
+            return updated_product
+
+        except Exception:
+            await self.repository.db.rollback()
+            raise
+
+    async def decrease_stock(
+        self,
+        product_id: int,
+        quantity: int,
+    ) -> Product | None:
+        """
+        Decrease product stock.
+        """
+
+        product = await self.repository.get_by_id(
+            product_id
+        )
+
+        if product is None:
+            return None
+
+        if not await self.repository.has_sufficient_stock(
+            product,
+            quantity,
+        ):
+            raise ValueError(
+                "Insufficient stock."
+            )
+
+        try:
+            updated_product = await self.repository.decrease_stock(
+                product,
+                quantity,
+            )
+
+            await self.repository.db.commit()
+
+            return updated_product
+
+        except Exception:
+            await self.repository.db.rollback()
+            raise
+
+    async def get_low_stock_products(
+        self,
+        threshold: int = 10,
+    ) -> list[Product]:
+        """
+        Get products below the stock threshold.
+        """
+
+        return await self.repository.get_low_stock_products(
+            threshold
+        )
+
+    async def get_out_of_stock_products(
+        self,
+    ) -> list[Product]:
+        """
+        Get products with zero stock.
+        """
+
+        return await self.repository.get_out_of_stock_products()
