@@ -8,6 +8,7 @@ from src.core.config import settings
 from src.db.base import Base
 from src.models import (
     Customer,
+    InventoryTransaction,
     Order,
     OrderItem,
     Payment,

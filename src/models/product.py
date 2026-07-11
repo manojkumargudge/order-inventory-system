@@ -38,3 +38,9 @@ class Product(BaseModel):
         "OrderItem",
         back_populates="product",
     )
+
+    inventory_transactions = relationship(
+        "InventoryTransaction",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

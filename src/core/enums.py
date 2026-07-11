@@ -1,6 +1,11 @@
 from enum import Enum
 
 
+class UserRole(str, Enum):
+    ADMIN = "ADMIN"
+    CUSTOMER = "CUSTOMER"
+
+
 class OrderStatus(str, Enum):
     PENDING = "PENDING"
     CONFIRMED = "CONFIRMED"
@@ -16,21 +21,6 @@ class PaymentStatus(str, Enum):
     REFUNDED = "REFUNDED"
 
 
-class UserRole(str, Enum):
-    ADMIN = "ADMIN"
-    CUSTOMER = "CUSTOMER"
-
-
-
-
-class OrderStatus(str, Enum):
-    PENDING = "PENDING"
-    CONFIRMED = "CONFIRMED"
-    SHIPPED = "SHIPPED"
-    DELIVERED = "DELIVERED"
-    CANCELLED = "CANCELLED"
-
-
 class ProductSortField(str, Enum):
     NAME = "name"
     PRICE = "price"
@@ -41,3 +31,11 @@ class ProductSortField(str, Enum):
 class SortOrder(str, Enum):
     ASC = "asc"
     DESC = "desc"
+
+
+class InventoryTransactionType(str, Enum):
+    PURCHASE = "PURCHASE"
+    SALE = "SALE"
+    RETURN = "RETURN"
+    ADJUSTMENT = "ADJUSTMENT"
+    DAMAGED = "DAMAGED"
