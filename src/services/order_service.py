@@ -38,7 +38,6 @@ class OrderService:
             )
 
         try:
-
             total_amount = Decimal("0.00")
 
             requested_quantities: dict[int, int] = {}
@@ -52,7 +51,6 @@ class OrderService:
             products_by_id: dict[int, Product] = {}
 
             for product_id, quantity in requested_quantities.items():
-
                 product = await self.product_repository.get_by_id(
                     product_id
                 )
@@ -78,16 +76,12 @@ class OrderService:
                 status=OrderStatus.PENDING,
             )
 
-            order = await self.order_repository.create_order(
-                order
-            )
+            order = await self.order_repository.create_order(order)
 
             for item in order_data.items:
-
                 product = products_by_id[item.product_id]
 
                 subtotal = product.price * item.quantity
-
                 total_amount += subtotal
 
                 order_item = OrderItem(
@@ -108,20 +102,23 @@ class OrderService:
 
             order.total_amount = total_amount
 
-            order = await self.order_repository.save(
-                order
-            )
+            order = await self.order_repository.save(order)
 
             await self.order_repository.db.commit()
 
-            return await self.order_repository.get_order_by_id(
+            created_order = await self.order_repository.get_order_by_id(
                 order.id
             )
 
+            if created_order is None:
+                raise RuntimeError(
+                    f"Order {order.id} was created but could not be retrieved."
+                )
+
+            return created_order
+
         except Exception:
-
             await self.order_repository.db.rollback()
-
             raise
 
     async def get_order_by_id(
@@ -173,15 +170,12 @@ class OrderService:
             )
 
         try:
-
             for item in order.order_items:
-
                 product = await self.product_repository.get_by_id(
                     item.product_id
                 )
 
                 if product is not None:
-
                     await self.product_repository.increase_stock(
                         product,
                         item.quantity,
@@ -189,20 +183,23 @@ class OrderService:
 
             order.status = OrderStatus.CANCELLED
 
-            order = await self.order_repository.save(
-                order
-            )
+            order = await self.order_repository.save(order)
 
             await self.order_repository.db.commit()
 
-            return await self.order_repository.get_order_by_id(
+            updated_order = await self.order_repository.get_order_by_id(
                 order.id
             )
 
+            if updated_order is None:
+                raise RuntimeError(
+                    f"Order {order.id} was updated but could not be retrieved."
+                )
+
+            return updated_order
+
         except Exception:
-
             await self.order_repository.db.rollback()
-
             raise
 
     async def update_order_status(
@@ -231,19 +228,21 @@ class OrderService:
         order.status = new_status
 
         try:
-
-            order = await self.order_repository.save(
-                order
-            )
+            order = await self.order_repository.save(order)
 
             await self.order_repository.db.commit()
 
-            return await self.order_repository.get_order_by_id(
+            updated_order = await self.order_repository.get_order_by_id(
                 order.id
             )
 
+            if updated_order is None:
+                raise RuntimeError(
+                    f"Order {order.id} was updated but could not be retrieved."
+                )
+
+            return updated_order
+
         except Exception:
-
             await self.order_repository.db.rollback()
-
             raise

@@ -1,0 +1,48 @@
+{
+  "family": "order-inventory-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::123456789012:role/orderInventoryTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "order-inventory-system",
+      "image": "123456789012.dkr.ecr.ap-south-1.amazonaws.com/order-inventory-system:latest",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "APP_NAME", "value": "Order Inventory System" },
+        { "name": "APP_VERSION", "value": "0.1.0" },
+        { "name": "ENVIRONMENT", "value": "production" },
+        { "name": "DEBUG", "value": "False" },
+        { "name": "ALGORITHM", "value": "HS256" },
+        { "name": "ACCESS_TOKEN_EXPIRE_MINUTES", "value": "30" }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:123456789012:secret:order-inventory/database-url"
+        },
+        {
+          "name": "SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:123456789012:secret:order-inventory/secret-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/order-inventory-system",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "app"
+        }
+      }
+    }
+  ]
+}

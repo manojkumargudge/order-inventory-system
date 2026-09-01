@@ -100,7 +100,7 @@ class PaymentService:
     async def update_payment_status(
         self,
         payment_id: int,
-        status: PaymentStatus,
+        payment_status: PaymentStatus,
         transaction_id: str | None = None,
     ):
         """
@@ -119,6 +119,6 @@ class PaymentService:
 
         return await self.payment_repository.update_payment_status(
             payment,
-            status,
+            payment_status,
             transaction_id,
         )

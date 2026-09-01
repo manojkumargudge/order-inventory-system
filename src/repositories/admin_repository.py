@@ -34,7 +34,7 @@ class AdminRepository:
             .order_by(Order.created_at.desc())
         )
 
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_order_by_id(
         self,
@@ -125,7 +125,7 @@ class AdminRepository:
             .order_by(Product.stock.asc())
         )
 
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_out_of_stock_products(
         self,
@@ -140,7 +140,7 @@ class AdminRepository:
             .order_by(Product.name)
         )
 
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def restock_product(
         self,
